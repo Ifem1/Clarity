@@ -1,0 +1,11 @@
+{
+  "name": "clarity-genlayer", "version": "1.0.0", "private": true,
+  "description": "GenLayer-native dependency-aware grants with real escrow and bonded disputes",
+  "scripts": {
+    "test:protocol": "python -m pytest -q tests",
+    "lint:contract": "python -m py_compile contracts/clarity.py",
+    "test:web": "npm --prefix frontend test",
+    "build:web": "npm --prefix frontend run build"
+  },
+  "devDependencies": {"genlayer":"0.39.1"}
+}

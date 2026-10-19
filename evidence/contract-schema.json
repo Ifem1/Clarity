@@ -1,0 +1,305 @@
+{
+  "ctor": {
+    "params": [],
+    "kwparams": {}
+  },
+  "methods": {
+    "activate_task": {
+      "params": [
+        [
+          "i",
+          "int"
+        ],
+        [
+          "n",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "any",
+      "payable": false
+    },
+    "challenge_task": {
+      "params": [
+        [
+          "i",
+          "int"
+        ],
+        [
+          "n",
+          "int"
+        ],
+        [
+          "note",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "any",
+      "payable": true
+    },
+    "claim_task": {
+      "params": [
+        [
+          "i",
+          "int"
+        ],
+        [
+          "n",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "any",
+      "payable": false
+    },
+    "create_grant": {
+      "params": [
+        [
+          "title",
+          "string"
+        ],
+        [
+          "description",
+          "string"
+        ],
+        [
+          "deadline",
+          "int"
+        ],
+        [
+          "challenge_window",
+          "int"
+        ],
+        [
+          "amount",
+          "int"
+        ],
+        [
+          "tasks_json",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "any",
+      "payable": true
+    },
+    "evaluate_task": {
+      "params": [
+        [
+          "i",
+          "int"
+        ],
+        [
+          "n",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "any",
+      "payable": false
+    },
+    "finalize_task": {
+      "params": [
+        [
+          "i",
+          "int"
+        ],
+        [
+          "n",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "any",
+      "payable": false
+    },
+    "get_accounting": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "dict"
+    },
+    "get_grant": {
+      "params": [
+        [
+          "i",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "sponsor": "address",
+        "title": "string",
+        "description": "string",
+        "total": "int",
+        "remaining": "int",
+        "paid": "int",
+        "refunded": "int",
+        "task_count": "int",
+        "created_at": "int",
+        "deadline": "int",
+        "challenge_window": "int"
+      }
+    },
+    "get_grant_count": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "int"
+    },
+    "get_manifest": {
+      "params": [
+        [
+          "i",
+          "int"
+        ],
+        [
+          "n",
+          "int"
+        ],
+        [
+          "phase",
+          "string"
+        ],
+        [
+          "round_no",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "grant_id": "int",
+        "task_index": "int",
+        "phase": "string",
+        "round": "int",
+        "evaluated_at": "int",
+        "label": "string",
+        "source_digest": "string",
+        "source_count": "int",
+        "note": "string"
+      }
+    },
+    "get_status_names": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "array"
+    },
+    "get_task": {
+      "params": [
+        [
+          "i",
+          "int"
+        ],
+        [
+          "n",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "grant_id": "int",
+        "index": "int",
+        "title": "string",
+        "requirement": "string",
+        "recipient": "address",
+        "allocation_bps": "int",
+        "amount": "int",
+        "dependencies": "string",
+        "sources": "string",
+        "challenge_sources": "string",
+        "status": "int",
+        "submitted_at": "int",
+        "attempts": "int",
+        "last_attempt_at": "int",
+        "provisional_label": "string",
+        "provisional_digest": "string",
+        "challenge_deadline": "int",
+        "challenger": "address",
+        "bond": "int",
+        "challenged_at": "int",
+        "challenge_attempts": "int",
+        "last_challenge_attempt_at": "int",
+        "challenge_note": "string",
+        "last_failure": "string",
+        "final_label": "string",
+        "paid": "int",
+        "refunded": "int"
+      }
+    },
+    "recover_stalled_challenge": {
+      "params": [
+        [
+          "i",
+          "int"
+        ],
+        [
+          "n",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "any",
+      "payable": false
+    },
+    "refund_task": {
+      "params": [
+        [
+          "i",
+          "int"
+        ],
+        [
+          "n",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "any",
+      "payable": false
+    },
+    "resolve_challenge": {
+      "params": [
+        [
+          "i",
+          "int"
+        ],
+        [
+          "n",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "any",
+      "payable": false
+    },
+    "submit_task": {
+      "params": [
+        [
+          "i",
+          "int"
+        ],
+        [
+          "n",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "any",
+      "payable": false
+    }
+  }
+}
