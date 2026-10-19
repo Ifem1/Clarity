@@ -14,7 +14,7 @@
 - [x] Canonical source-matched StudioNet deployment on chain 61999; finalized receipt and fresh reads recorded in `docs/DEPLOYMENT.md`.
 - [x] Three live lifecycle scenarios executed: dependency payout and exact native deltas; VIOLATED review, exact 5% challenge bond, forfeiture and refund; validator disagreement/no-majority with unchanged state and successful retry. Receipts and limitations are recorded in `docs/LIVE_VERIFICATION.md`.
 - [x] Local Chrome injected-wallet check: connected an already-authorized wallet, verified the app switched to StudioNet 61999 without a stale warning, and read the canonical grant and claimed task state. No transaction was submitted.
-- [ ] Final commit pushed and GitHub Actions green — pending push/CI.
+- [x] Release implementation commit `ca80a3ddca5349d6bae0ddbbe52b3e8a1ebb927b` pushed; GitHub Actions run [39301675436](https://github.com/Ifem1/Clarity/actions/runs/39301675436) passed all three jobs.
 - [ ] Owner’s manual Vercel deployment and production URL verification — owner action.
 - [ ] Injected-wallet browser test against the public deployment — local Chrome check passed; public URL check waits for Vercel deployment.
 

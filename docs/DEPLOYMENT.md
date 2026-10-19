@@ -14,7 +14,7 @@ Network `studionet`, chain ID `61999`, RPC `https://studio.genlayer.com/api`, ex
 ## Final immutable deployment record (to complete after actual deployment)
 
 ```text
-Git commit: pending final source commit
+Git commit: `ca80a3ddca5349d6bae0ddbbe52b3e8a1ebb927b` (release implementation)
 Source SHA-256: `2da5ab7c7175a85facced4394d9a5762b6136e9597625682e7e6939d17c52eb59`
 Contract: `0x449f08f7407559D3e7538979B666D08ec35536B8`
 Deployment transaction: `0xb51c7ff6d203fbdf318f986358bcf9b85dd634f3c1b1257b6c5498809815748c`
@@ -22,7 +22,7 @@ Consensus: `FINALIZED`, `MAJORITY_AGREE`
 Execution: `SUCCESS`
 Network: StudioNet, chain ID 61999
 Production frontend: owner’s Vercel deployment pending
-Final CI run: pending final push
+Final CI run: [39301675436](https://github.com/Ifem1/Clarity/actions/runs/39301675436), all three jobs passed
 
 Deployment is protected against recipient-controlled transfer reverts: sponsor and recipient addresses must be EOAs, and task beneficiaries self-register before funding. Scenario A verified actual GEN delivery on StudioNet. Two failed disposable test deployments hold 0.10 GEN each without app accounting after unsuccessful payable calls; see the incident record in `docs/LIVE_VERIFICATION.md`.
 ```
