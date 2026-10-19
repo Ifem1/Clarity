@@ -4,7 +4,7 @@
 
 **Clarity** is a GenLayer-native, dependency-aware grant escrow. A sponsor funds 2–8 ordered tasks, each with its own immutable recipient, allocation, public evidence authorities and prerequisites. GenLayer validators independently retrieve the frozen evidence and agree on a bounded semantic classification; deterministic contract code determines claimability, bonded disputes and exact native GEN transfers.
 
-**Current status: locally validated, NOT DEPLOYED OR LIVE-VERIFIED.** The contract must not be deployed yet: outgoing native child-transfer failure has no supported recovery path in the pinned runtime, and the clean frontend production checks could not run because package registry access stalled. Do not use any address from other projects. See `docs/RELEASE_GATES.md` and `docs/LIVE_VERIFICATION.md`.
+**Current status: canonical StudioNet deployment and native live lifecycle proofs recorded; final source push and Vercel deployment remain.** The canonical contract is `0x449f08f7407559D3e7538979B666D08ec35536B8` on chain 61999. Sponsors and beneficiaries submit directly from EOAs; beneficiaries register on this contract before a grant is funded. See `docs/DEPLOYMENT.md`, `docs/RELEASE_GATES.md` and `docs/LIVE_VERIFICATION.md` for hashes, receipts and live accounting.
 
 ## What Clarity does
 
@@ -18,7 +18,7 @@
 - Every validator independently renders the sources and classifies `SATISFIED`, `VIOLATED` or `INCONCLUSIVE`. Incomplete/invalid output remains non-payable.
 - Custom GenLayer `run_nondet_unsafe` compares an identical **scalar token + primary source digest + combined source digest**. No dict-vs-string comparison or consensus on arbitrary reasoning prose.
 - Challenge: issuer-side sponsor may challenge a SATISFIED result; recipient may challenge a VIOLATED result. Exact 5% task-allocation bond, subsequent independent re-review, deterministic forfeiture/return.
-- A satisfied node becomes READY only if **all prerequisites are READY or CLAIMED**; claim moves native GEN strictly to the frozen recipient.
+- A recipient must register from its own direct EOA wallet before the sponsor can fund a grant; contract wallets are rejected so recipient code cannot revert the native transfer. A satisfied node becomes READY only if **all prerequisites are READY or CLAIMED**; claim moves native GEN strictly to the frozen recipient.
 - Unverified, rejected, expired and stalled states have constrained reclaim or refund paths; no arbitrary sponsor seizure of a READY or CLAIMED task.
 - Deterministic accounting: `total = remaining + paid + refunded`, and bond ledger `received = locked + returned + forfeited`.
 
@@ -47,11 +47,11 @@ npm --prefix frontend run lint
 npm --prefix frontend run build
 ```
 
-The current host passed 76 Python tests (55 offline and 21 GenLayer Direct Mode), 11 frontend protocol tests, GenVM lint, pinned SDK semantic validation and schema extraction. The Pyright check could not write its cache outside the workspace; `npm ci` and `npm ping` stalled, so TypeScript, ESLint and the production build remain unverified. Direct Mode does not prove network consensus or child-transfer delivery. Exact evidence and blockers are recorded in `docs/RELEASE_GATES.md`.
+The current host passed 81 Python tests (57 offline and 24 GenLayer Direct Mode), 11 frontend protocol tests, TypeScript, ESLint, production build, GenVM lint, pinned SDK semantic validation/typecheck and schema extraction. Three live StudioNet scenarios exercised dependency payout, a challenged VIOLATED result with bond forfeiture/refund, and fail-closed no-majority recovery. Exact evidence and remaining release gates are recorded in `docs/RELEASE_GATES.md`.
 
 ## Deploying (agent-owned, never simulated)
 
-Do not deploy until `docs/RELEASE_GATES.md` is satisfied. In particular, resolve the outgoing transfer failure path and pass clean frontend production checks. On a genuine finalized StudioNet deployment, set **`NEXT_PUBLIC_CLARITY_CONTRACT`** in Vercel to the actual deployed address and rebuild. Reads are deliberately empty/disabled before configuration; no locally invented records appear in the public UI.
+The canonical contract is deployed and locally configured in `frontend/.env.local` as `NEXT_PUBLIC_CLARITY_CONTRACT=0x449f08f7407559D3e7538979B666D08ec35536B8`. For the owner’s manual Vercel deployment, set that same variable in the Vercel project and build from `frontend/`. Reads are deliberately empty/disabled when no address is configured; no locally invented records appear in the public UI.
 
 ## Comparison / originality
 

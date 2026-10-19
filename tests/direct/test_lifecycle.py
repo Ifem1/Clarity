@@ -28,8 +28,12 @@ def setup(direct_vm, direct_deploy, direct_alice, direct_bob):
     warp(vm, START)
     alice=direct_alice
     bob=direct_bob
-    vm.sender = alice
     c = deploy(direct_deploy)
+    vm.sender = bob
+    vm.origin = bob
+    c.register_recipient()
+    vm.sender = alice
+    vm.origin = alice
     rows = [{'title':f'Task {n}', 'requirement':'The public record demonstrates completion',
              'recipient':'0x'+bytes(bob).hex(), 'allocation_bps':bps,
              'dependencies':[] if n == 0 else [0],
@@ -75,7 +79,33 @@ def test_funded_creation(setup):
     c=fund(setup)
     assert c.get_grant(1).total==AMOUNT
     assert [c.get_task(1,n).amount for n in (0,1)]==[4*10**16,6*10**16]
+    assert c.is_registered_recipient('0x'+bytes(setup[4]).hex()) is True
     conservation(c)
+
+
+def test_contract_recipient_rejected_even_if_address_is_supplied(setup):
+    vm,c,rows,alice,bob=setup
+    rows[0]['recipient']='0x'+'c'*40
+    vm.value=AMOUNT
+    with pytest.raises(AssertionError,match='register from its own EOA'):
+        c.create_grant('Public evidence','Two milestones',START+86400,300,AMOUNT,json.dumps(rows))
+
+
+def test_recipient_registration_rejects_contract_forwarding(setup):
+    vm,c,rows,alice,bob=setup
+    vm.sender=bob
+    vm.origin=alice
+    with pytest.raises(AssertionError,match='direct EOA transaction'):
+        c.register_recipient()
+
+
+def test_sponsor_grant_creation_rejects_contract_forwarding(setup):
+    vm,c,rows,alice,bob=setup
+    vm.sender=alice
+    vm.origin=bob
+    vm.value=AMOUNT
+    with pytest.raises(AssertionError,match='sponsor must submit directly from an EOA'):
+        c.create_grant('Public evidence','Two milestones',START+86400,300,AMOUNT,json.dumps(rows))
 
 
 def test_public_views_encode(setup):

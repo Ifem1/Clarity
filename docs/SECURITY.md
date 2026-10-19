@@ -20,15 +20,15 @@
 | Evidence-source substitution | URLs stored only at creation | challenges use frozen authorities |
 | Challenge griefing | 5% bond and bounded challenges | bond success/failure transfers |
 | Stalled consensus | RETRYABLE, 3 attempts, 7-day grace; stalled challenge recovery | no stuck accounting |
-| Reentrancy on transfer | update all storage and ledgers before external transfer | GenVM atomic revert proof |
+| Recipient transfer reverts | only directly registered EOAs can receive; contract-wallet forwarding is rejected | actual external-message delivery still requires live proof |
 | Duplicate claim/refund | terminal statuses and paid/refunded guards | replay rejection |
 | Wallet account/chain change | EIP-1193 event clears session, chain validated | real injected-wallet browser proof |
 | Sponsor after-the-fact refund | READY/CLAIMED disallowed | no sponsor clawback |
 | DNS rebinding/private routing | HTTPS and literal private-target rejects; GenVM renderer sandbox | document residual SSRF limits |
 
-## Release-blocking transfer risk
+## Native transfer boundary
 
-The contract currently records a claim, refund, bond return or forfeiture in storage before emitting a finalized native transfer. The pinned GenVM SDK describes `__on_errored_message__` for failed **incoming** payable messages, but does not expose an equivalent callback for failed outgoing child transfers. The official value-transfer semantics say failed child value is not automatically returned to the sender. A rejected transfer can therefore leave contract ledgers settled even though the intended recipient did not receive GEN. The Direct Mode fixture cannot execute or reverse child transfers, so this behavior has not been validated there. Do not deploy until the contract supports a safe, tested outgoing-transfer settlement design.
+The pinned GenVM SDK has no callback that restores accounting after a failed outgoing child transfer, and failed child value is not automatically returned to its sender. Clarity mitigates recipient-controlled failures by requiring each beneficiary to register from a direct transaction where `sender_address == origin_address`; grant sponsors must also submit directly from an EOA. This excludes contract wallets and forwarding contracts, whose code could reject a transfer. A registered EOA has no recipient code to revert the native GEN transfer. The transfer remains asynchronous, and actual delivery and balance deltas still require a live StudioNet scenario.
 
 ## Known boundaries
 

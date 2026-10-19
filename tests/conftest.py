@@ -30,6 +30,7 @@ class Contract:
         instance.grants = {}
         instance.tasks = {}
         instance.manifests = {}
+        instance.recipient_registry = {}
         return instance
 
 @pytest.fixture
@@ -39,7 +40,7 @@ def env():
     other = '0x' + 'c' * 40
     public = Public()
     transfers = []
-    message = types.SimpleNamespace(sender_address=Address(user), value=0)
+    message = types.SimpleNamespace(sender_address=Address(user), origin_address=Address(user), value=0)
     now = [datetime.datetime(2026, 10, 19, 12, tzinfo=datetime.timezone.utc).timestamp()]
     vm = types.SimpleNamespace(Return=Return, UserError=RuntimeError)
 

@@ -17,6 +17,10 @@ contracts/clarity.py
 
 The frontend and outside evidence publishers cannot change the authorized release amounts, money recipients, deadlines or dependency edges. No off-chain infrastructure has transaction/signing or adjudication authority. The UI is an optional public client of on-chain methods.
 
+## Direct EOA recipients
+
+The GenLayer runtime emits native transfers asynchronously and does not return failed outgoing child value to the sender. To prevent recipient code from deliberately rejecting a payout, each beneficiary first calls `register_recipient()` from a direct EOA transaction (`sender_address == origin_address`). The sponsor must also create a grant directly from an EOA, and every frozen recipient must already be registered. This excludes contract wallets and forwarding contracts as sponsors or payout destinations. Registration is permanent for a deployed Clarity contract.
+
 ## Ordered dependency graph
 
 2–8 tasks ordered during creation. Each node may only depend on indices lower than its own. This proves acyclicity without a recursive on-chain search. Allocation basis points sum to exactly 10,000 and each amount is fixed at creation. Integer rounding remainder belongs to the last node. Graph nodes cannot be edited after creation.
@@ -52,7 +56,7 @@ A challenged result never transitions to a payout on timeout alone. Stalled-chal
 
 For each grant `total = remaining + paid + refunded`, and across all grants same for global escrow counters. Challenge reserve is separate: `bonds_received = bonds_locked + bonds_returned + bonds_forfeited`.
 
-Any user may initiate settlement functions, but no caller can select payout address or amount: both are frozen at creation. State and ledgers update before `emit_transfer`; failed native transfer must revert the operation atomically (verify on the real GenVM).
+Any user may initiate settlement functions, but no caller can select payout address or amount: both are frozen at creation. State and ledgers update before `emit_transfer`; only direct EOAs are valid transfer recipients, so recipient contract code cannot revert the transfer. Live Studionet tests must still verify actual delivery and balance deltas.
 
 ## Non-features
 

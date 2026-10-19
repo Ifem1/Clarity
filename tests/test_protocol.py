@@ -18,7 +18,14 @@ def tasks(env):
 
 def create(env, amount=10**18, rows=None):
     c=env.c; rows=rows if rows is not None else tasks(env)
-    t=c.Clarity(); env.gl.message.value=amount
+    t=c.Clarity()
+    for recipient in {r['recipient'] for r in rows}:
+        env.gl.message.sender_address=env.c.Address(recipient)
+        env.gl.message.origin_address=env.c.Address(recipient)
+        t.register_recipient()
+    env.gl.message.sender_address=env.sender
+    env.gl.message.origin_address=env.sender
+    env.gl.message.value=amount
     t.create_grant('Public data','Grant for reproducible public data work',int(env.now[0])+86400,300,amount,json.dumps(rows))
     env.gl.message.value=0
     return t
@@ -35,6 +42,28 @@ def test_graph_good(env):
     t=create(env);assert t.get_grant_count()==1
     assert sum(t.get_task(1,n).amount for n in (0,1))==10**18
     assert t.get_accounting()['funded']==10**18
+
+def test_recipients_must_self_register_from_eoa(env):
+    t=env.c.Clarity();rows=tasks(env)
+    env.gl.message.value=10**18
+    with pytest.raises(AssertionError,match='register from its own EOA'):
+        t.create_grant('Public data','Grant for reproducible public data work',int(env.now[0])+86400,300,10**18,json.dumps(rows))
+    env.gl.message.sender_address=env.recipient
+    env.gl.message.origin_address=env.sender
+    with pytest.raises(AssertionError,match='direct EOA transaction'):
+        t.register_recipient()
+
+def test_sponsor_must_submit_directly_from_eoa(env):
+    t=env.c.Clarity();rows=tasks(env)
+    for recipient in {r['recipient'] for r in rows}:
+        env.gl.message.sender_address=env.c.Address(recipient)
+        env.gl.message.origin_address=env.c.Address(recipient)
+        t.register_recipient()
+    env.gl.message.sender_address=env.sender
+    env.gl.message.origin_address=env.recipient
+    env.gl.message.value=10**18
+    with pytest.raises(AssertionError,match='sponsor must submit directly from an EOA'):
+        t.create_grant('Public data','Grant for reproducible public data work',int(env.now[0])+86400,300,10**18,json.dumps(rows))
 
 def test_bad_graph_cycle_forward_reference(env):
     rows=tasks(env);rows[0]['dependencies']=[1]

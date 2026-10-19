@@ -237,6 +237,17 @@
         "refunded": "int"
       }
     },
+    "is_registered_recipient": {
+      "params": [
+        [
+          "recipient",
+          "address"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "bool"
+    },
     "recover_stalled_challenge": {
       "params": [
         [
@@ -264,6 +275,13 @@
           "int"
         ]
       ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "any",
+      "payable": false
+    },
+    "register_recipient": {
+      "params": [],
       "kwparams": {},
       "readonly": false,
       "ret": "any",

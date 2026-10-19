@@ -116,7 +116,9 @@ def _is_public_https(url: str) -> bool:
 
 def _host_identity(url: str) -> str:
     """Conservative hostname grouping; does not establish legal publisher independence."""
-    host = urlparse(url).hostname.lower().removeprefix("www.")
+    host = urlparse(url).hostname
+    assert host is not None, "validated source URL must have a hostname"
+    host = host.lower().removeprefix("www.")
     labels = host.split(".")
     return ".".join(labels[-2:]) if len(labels) >= 2 else host
 
@@ -188,6 +190,7 @@ class Clarity(gl.Contract):
     grants: TreeMap[u256, Grant]
     tasks: TreeMap[str, Task]
     manifests: TreeMap[str, Manifest]
+    recipient_registry: TreeMap[str, bool]
     total_funded: u256
     total_remaining: u256
     total_paid: u256
@@ -208,6 +211,19 @@ class Clarity(gl.Contract):
         self.bonds_locked = u256(0)
         self.bonds_returned = u256(0)
         self.bonds_forfeited = u256(0)
+
+    @gl.public.write
+    def register_recipient(self):
+        """Prove direct EOA control so outgoing native transfers cannot hit contract code."""
+        sender = gl.message.sender_address
+        assert sender == gl.message.origin_address, "direct EOA transaction required"
+        assert sender != Address(ZERO_ADDRESS), "zero address cannot register"
+        self.recipient_registry[str(sender).lower()] = True
+
+    @gl.public.view
+    def is_registered_recipient(self, recipient: Address) -> bool:
+        key = str(recipient).lower()
+        return key in self.recipient_registry and self.recipient_registry[key]
 
     def _now(self) -> u256:
         return u256(int(datetime.datetime.fromisoformat(gl.message_raw["datetime"]).timestamp()))
@@ -256,6 +272,7 @@ class Clarity(gl.Contract):
             assert 0 < len(item["title"]) <= 100 and 0 < len(item["requirement"]) <= 1200, "invalid text"
             recipient = Address(item["recipient"])
             assert recipient != Address(ZERO_ADDRESS) and recipient != gl.message.sender_address, "invalid recipient"
+            assert self.is_registered_recipient(recipient), "recipient must register from its own EOA first"
             self._validate_sources(item["sources"], 2, 3)
             assert all(s["role"] in ("PRIMARY", "CORROBORATING") for s in item["sources"]), "initial source roles"
             self._validate_sources(item["challenge_sources"], 0, 2)
@@ -269,6 +286,7 @@ class Clarity(gl.Contract):
     def create_grant(self, title: str, description: str, deadline: u256, challenge_window: u256,
                      amount: u256, tasks_json: str):
         now = self._now()
+        assert gl.message.sender_address == gl.message.origin_address, "sponsor must submit directly from an EOA"
         assert 0 < len(title) <= 120 and 0 < len(description) <= 1600, "invalid grant text"
         assert now + u256(600) <= deadline <= now + u256(90 * 86400), "invalid deadline"
         assert u256(MIN_WINDOW) <= challenge_window <= u256(MAX_WINDOW), "invalid challenge window"
