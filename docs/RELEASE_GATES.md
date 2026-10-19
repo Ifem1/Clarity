@@ -13,9 +13,10 @@
 - [x] Recipient-controlled native transfer failure mitigated: sponsor creation and recipient registration require direct EOA-origin transactions; all task recipients must register before funding. A contract wallet cannot register or sponsor via a forwarding contract, so native payouts and refunds cannot be rejected by recipient code.
 - [x] Canonical source-matched StudioNet deployment on chain 61999; finalized receipt and fresh reads recorded in `docs/DEPLOYMENT.md`.
 - [x] Three live lifecycle scenarios executed: dependency payout and exact native deltas; VIOLATED review, exact 5% challenge bond, forfeiture and refund; validator disagreement/no-majority with unchanged state and successful retry. Receipts and limitations are recorded in `docs/LIVE_VERIFICATION.md`.
+- [x] Local Chrome injected-wallet check: connected an already-authorized wallet, verified the app switched to StudioNet 61999 without a stale warning, and read the canonical grant and claimed task state. No transaction was submitted.
 - [ ] Final commit pushed and GitHub Actions green — pending push/CI.
 - [ ] Owner’s manual Vercel deployment and production URL verification — owner action.
-- [ ] Injected-wallet browser test against the public deployment — pending Vercel URL and browser wallet session.
+- [ ] Injected-wallet browser test against the public deployment — local Chrome check passed; public URL check waits for Vercel deployment.
 
 Two earlier disposable test deployments received malformed/unregistered payable calls and hold 0.10 GEN each with zero app-ledger accounting. They are not the canonical address and have no recovery method. The canonical contract is clean; the testnet loss is transparently recorded in `docs/LIVE_VERIFICATION.md`.
 
