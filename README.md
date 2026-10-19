@@ -4,7 +4,7 @@
 
 **Clarity** is a GenLayer-native, dependency-aware grant escrow. A sponsor funds 2–8 ordered tasks, each with its own immutable recipient, allocation, public evidence authorities and prerequisites. GenLayer validators independently retrieve the frozen evidence and agree on a bounded semantic classification; deterministic contract code determines claimability, bonded disputes and exact native GEN transfers.
 
-**Current status: source implementation; NOT DEPLOYED OR LIVE-VERIFIED.** Do not use any address from other projects. See `docs/RELEASE_GATES.md`. This repository contains no fabricated transactions, funded grants, explorer addresses, live proofs or screenshot claims.
+**Current status: locally validated, NOT DEPLOYED OR LIVE-VERIFIED.** The contract must not be deployed yet: outgoing native child-transfer failure has no supported recovery path in the pinned runtime, and the clean frontend production checks could not run because package registry access stalled. Do not use any address from other projects. See `docs/RELEASE_GATES.md` and `docs/LIVE_VERIFICATION.md`.
 
 ## What Clarity does
 
@@ -35,24 +35,23 @@ docs/                         Architecture, threat model, release gates and revi
 .github/workflows/ci.yml      Source + offline tests + frontend build gate
 ```
 
-## Local usage
+## Local verification
 
 ```bash
-python -m pip install pytest
-python -m pytest -q tests
+python -m pytest -p gltest.direct.pytest_plugin -p gltest.fixtures -q
 python -m py_compile contracts/clarity.py
 node --test frontend/test/*.test.mjs
-npm install --prefix frontend
+npm ci --prefix frontend
 npm --prefix frontend run typecheck
 npm --prefix frontend run lint
 npm --prefix frontend run build
 ```
 
-Package installation and real GenVM checks were **not available** in the artifact-generation environment. Python offline tests and pure Node tests were run; their counts are recorded in `docs/RELEASE_GATES.md`. **These do not prove GenVM deployment compatibility.** The coding agent must install the repository-local CLI pinned to `genlayer@0.39.1`, run GenVM lint/schema/typecheck and Direct Mode, fix any genuine compatibility problems, then run live acceptance and create transaction-level evidence before submission.
+The current host passed 76 Python tests (55 offline and 21 GenLayer Direct Mode), 11 frontend protocol tests, GenVM lint, pinned SDK semantic validation and schema extraction. The Pyright check could not write its cache outside the workspace; `npm ci` and `npm ping` stalled, so TypeScript, ESLint and the production build remain unverified. Direct Mode does not prove network consensus or child-transfer delivery. Exact evidence and blockers are recorded in `docs/RELEASE_GATES.md`.
 
 ## Deploying (agent-owned, never simulated)
 
-Do not deploy until `docs/RELEASE_GATES.md` is satisfied. On a genuine finalized StudioNet deployment, set **`NEXT_PUBLIC_CLARITY_CONTRACT`** in Vercel to the actual deployed address and rebuild. Reads are deliberately empty/disabled before configuration; no locally invented records appear in the public UI.
+Do not deploy until `docs/RELEASE_GATES.md` is satisfied. In particular, resolve the outgoing transfer failure path and pass clean frontend production checks. On a genuine finalized StudioNet deployment, set **`NEXT_PUBLIC_CLARITY_CONTRACT`** in Vercel to the actual deployed address and rebuild. Reads are deliberately empty/disabled before configuration; no locally invented records appear in the public UI.
 
 ## Comparison / originality
 

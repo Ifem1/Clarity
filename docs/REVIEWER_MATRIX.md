@@ -5,14 +5,14 @@ Target: exceptional GenLayer fit, contract quality, engineering and frontend. No
 | Criterion | Concrete source | Acceptance evidence required |
 |---|---|---|
 | GenLayer necessity | `contracts/clarity.py::_review` | separate validators independently fetch source bytes and agree semantic label+digest; leader/validator disagreement rolls back |
-| Economic substance | payable `create_grant`, `claim_task`, `refund_task` | before/after native GEN balances + exact escrow accounting |
+| Economic substance | payable `create_grant`, `claim_task`, `refund_task` | before/after native GEN balances + exact escrow accounting; LIVE NOT RUN |
 | Novelty | dependency graph + multi-recipient payout | node 2 verified but BLOCKED while node 1 pending; later activates and pays |
-| Custom consensus | `run_nondet_unsafe(inspect,validate)` | accepted and disagreed/undetermined receipts |
+| Custom consensus | `run_nondet_unsafe(inspect,validate)` | Direct Mode validator agreement/disagreement tests pass; live accepted and disagreed/undetermined receipts pending |
 | Trust model | immutable sources, opponents can challenge | attempted source, recipient, amount, edge substitution rejected |
 | No admin settlement | only creator sponsor stored, no privileged payout method | source + live outsider-initiated claims and refunds |
-| Adversarial design | bond exactness, wrong sender, retries, forced failure | Direct Mode assertions and live paths |
-| Frontend | `/`, `/new`, `/grants/[id]` | real wallet approval, no mocked records, role guards, correct decimals |
-| Documentation | README, architecture, security, runbooks | source-matched canonical explorer URL, receipts, CI and evidence files |
+| Adversarial design | bond exactness, wrong sender, retries, forced failure | Direct Mode assertions pass; outgoing child transfer failure cannot be recovered by current contract and blocks deployment |
+| Frontend | `/`, `/new`, `/grants/[id]` | protocol tests pass; clean-install typecheck, lint, build and real wallet approval remain pending |
+| Documentation | README, architecture, security, runbooks | source hash and local validation recorded; canonical address, receipts, CI and live evidence pending |
 
 ## Essential live scenarios
 
@@ -23,3 +23,5 @@ B. **Rejected payout**: a separate 0.10 test GEN grant, primary evidence explici
 C. **Source/consensus failure**: a required source is inaccessible, evidence bytes differ across validators, or model returns malformed token; demonstrate no `READY` or `CLAIMED` transition. Exercise bounded retry and recovery. If it is impossible to induce a truthful live failure, record that limitation and leave test-only evidence labelled test-only.
 
 For each successful live operation: finalized transaction hash, GenVM execution result, validator finality, exact method/args, task/grant before+after, source manifest, amount and recipient, global deltas. Record failed/undetermined transactions separately; *finalized* alone is not successful execution.
+
+**Current gate:** none of A/B/C has been run on StudioNet. Do not create live grants until the outgoing transfer recovery flaw and blocked frontend production gates are resolved. Local Direct Mode scenarios are documented separately in `docs/LIVE_VERIFICATION.md` and do not count as chain evidence.

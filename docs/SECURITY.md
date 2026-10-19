@@ -26,6 +26,10 @@
 | Sponsor after-the-fact refund | READY/CLAIMED disallowed | no sponsor clawback |
 | DNS rebinding/private routing | HTTPS and literal private-target rejects; GenVM renderer sandbox | document residual SSRF limits |
 
+## Release-blocking transfer risk
+
+The contract currently records a claim, refund, bond return or forfeiture in storage before emitting a finalized native transfer. The pinned GenVM SDK describes `__on_errored_message__` for failed **incoming** payable messages, but does not expose an equivalent callback for failed outgoing child transfers. The official value-transfer semantics say failed child value is not automatically returned to the sender. A rejected transfer can therefore leave contract ledgers settled even though the intended recipient did not receive GEN. The Direct Mode fixture cannot execute or reverse child transfers, so this behavior has not been validated there. Do not deploy until the contract supports a safe, tested outgoing-transfer settlement design.
+
 ## Known boundaries
 
 - StudioNet native GEN is testnet value; this is not production stablecoin custody.
