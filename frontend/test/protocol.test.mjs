@@ -1,12 +1,13 @@
 import {test} from 'node:test';
 import {strict as a} from 'node:assert';
-import {parseGen,formatGen,bondWei,allocations,graphError,isSuccessfulFinal,taskActions} from '../src/lib/protocol.mjs';
+import {parseGen,formatGen,bondWei,allocations,graphError,isSuccessfulFinal,isFinalized,transactionStatusName,taskActions} from '../src/lib/protocol.mjs';
 test('precision in GEN',()=>{for(const v of ['0','0.000000000000000001','1.234500000000000001','8900000'])a.equal(formatGen(parseGen(v)),v.includes('.')?v.replace(/0+$/,'').replace(/\.$/,''):v);});
 test('reject too many decimals',()=>a.throws(()=>parseGen('1.0000000000000000001')));
 test('exact bond',()=>a.equal(bondWei(parseGen('0.02')),parseGen('0.001')));
 test('rounding goes to last task',()=>a.deepEqual(allocations(1000000000000000007n,[{allocation_bps:4000},{allocation_bps:6000}]).reduce((a,b)=>a+b,0n),1000000000000000007n));
 test('reject incompatible allocations',()=>a.throws(()=>allocations(10n,[{allocation_bps:9000}])));
 test('only explicit execution success counts',()=>{a.equal(isSuccessfulFinal({txExecutionResultName:'FINISHED_WITH_RETURN'}),true);a.equal(isSuccessfulFinal({resultName:'MAJORITY_AGREE'}),false);});
+test('StudioNet numeric and named statuses identify finality correctly',()=>{a.equal(transactionStatusName({status:7}),'FINALIZED');a.equal(transactionStatusName({statusName:'FINALIZED'}),'FINALIZED');a.equal(isFinalized({status:7}),true);a.equal(isFinalized({status:5}),false);a.equal(isFinalized({statusName:'ACCEPTED'}),false);a.equal(isSuccessfulFinal({status:7,consensus_data:{leader_receipt:[{execution_result:'SUCCESS'}]}}),true);});
 test('reject missing tasks',()=>a.match(graphError([]),/two and eight/));
 
 const grant={deadline:1000,sponsor:'0xaaa'};

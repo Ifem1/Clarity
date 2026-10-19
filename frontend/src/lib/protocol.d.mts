@@ -8,4 +8,6 @@ export function bondWei(value:bigint|number|string):bigint;
 export function allocations(total:bigint,tasks:{allocation_bps:number}[]):bigint[];
 export function graphError(tasks: {recipient:string;title:string;requirement:string;allocation_bps:number;dependencies:number[];sources:{role:string;required:boolean}[];challenge_sources:unknown[]}[]):string;
 export function isSuccessfulFinal(receipt:Record<string,unknown>):boolean;
+export function transactionStatusName(receipt:Record<string,unknown>):string;
+export function isFinalized(receipt:Record<string,unknown>):boolean;
 export function addressText(value:unknown):string;

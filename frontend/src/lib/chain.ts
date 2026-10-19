@@ -1,8 +1,7 @@
 "use client";
 import {createClient} from "genlayer-js";
 import {studionet} from "genlayer-js/chains";
-import {TransactionStatus} from "genlayer-js/types";
-import {addressText,isSuccessfulFinal} from './protocol.mjs';
+import {addressText,isFinalized,isSuccessfulFinal,transactionStatusName} from './protocol.mjs';
 export const CONTRACT = process.env.NEXT_PUBLIC_CLARITY_CONTRACT || '';
 export const EXPLORER = 'https://explorer-studio.genlayer.com';
 const readClient:any=createClient({chain:studionet});
@@ -24,7 +23,15 @@ export function forgetWallet(){walletClient=null;}
 export async function write(name:string,args:any[]=[],value:bigint=0n):Promise<string>{
  if(!walletClient)throw Error('Connect a wallet before writing.');if(!configured())throw Error('Contract is not deployed.');
  const hash=await walletClient.writeContract({address:CONTRACT,functionName:name,args,value});
- const receipt=await walletClient.waitForTransactionReceipt({hash,status:TransactionStatus.FINALIZED});
+ const deadline=Date.now()+300000;let receipt:any;
+ while(true){
+  receipt=await walletClient.getTransaction({hash});
+  const status=transactionStatusName(receipt);
+  if(isFinalized(receipt))break;
+  if(['CANCELED','UNDETERMINED','VALIDATORS_TIMEOUT','LEADER_TIMEOUT'].includes(status))throw Error(`Transaction ${hash} ended with ${status}. Inspect ${EXPLORER}/transactions/${hash}`);
+  if(Date.now()>=deadline)throw Error(`Timed out waiting for transaction ${hash} to finalize (current status: ${status||'unknown'}). Inspect ${EXPLORER}/transactions/${hash}`);
+  await new Promise(resolve=>setTimeout(resolve,2500));
+ }
  if(!isSuccessfulFinal(receipt))throw Error('Transaction finalized without successful contract execution. Inspect '+EXPLORER+'/transactions/'+hash);
  return String(hash);
 }

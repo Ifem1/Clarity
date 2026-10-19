@@ -97,6 +97,19 @@ Final pore-test balance: 9237999999999999799 wei
 Final chronicle-test-wallet balance: 997069000000000000010 wei
 ```
 
+## Local front-end wallet transaction smoke test
+
+Using the already-unlocked Chrome wallet connected to the local production build, the wallet owner approved one `register_recipient()` transaction from `0xd6423ae82a975d55c6ceac222827a727325e0459` to the canonical contract. No GEN value was attached and no grant was created or funded.
+
+```text
+Transaction: 0x207c8947e943045f531bdf572303f8a63e54d43c74d6d1c0be27381a5250c2e0
+Receipt: FINALIZED / MAJORITY_AGREE / GenVM SUCCESS
+value_credited: false
+Follow-up is_registered_recipient(sender): true
+```
+
+The transaction finalized on chain, but the original front-end receipt waiter timed out while treating the SDK's raw `ACCEPTED` status as finality state. The app was corrected to poll the SDK's normalized transaction record, which exposes the finalized status and execution result. The local production build then reconnected the wallet and displayed it as registered. No second transaction was sent.
+
 ## Abandoned test deployment incident
 
 Two disposable deployments are not canonical. Each received a failed payable `create_grant` transaction whose receipt reports `value_credited: true` while GenVM execution failed and the application ledger rolled back. Their native balances were read as 0.10 GEN each, with `get_grant_count() == 0` and zero accounting. The first failure (`0x470c3adc63b3a974d966bc182a4f56b95744531ff154c49ab6811a9387e2c1eb`) was caused by a local test helper serializing the deadline as a string. The second (`0xb2e317afb8b0095743b638e7b4d7294f544d9edc10e524b254004a0a21c790ed`) used recipients not registered on that specific contract instance. Their addresses are `0x3843E1D7E9f6748DB2ff99B3cdc55E9Cde3cBe1D` and `0x22E01FAE9D2032926bcE4399AFaB4bB29fAf93f8`; neither is configured in the frontend. The contract ABI has no recovery method, so those 0.20 testnet GEN are stranded. The canonical contract was deployed separately, input checks were corrected, both recipients were registered on that instance before funding, and all canonical escrow settled as recorded above.
