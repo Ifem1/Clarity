@@ -99,6 +99,7 @@ def test_refund_cannot_take_ready_allocation(env):
     t._review=lambda task,challenge:'SATISFIED|'+'a'*64+'|'+'b'*64;t.evaluate_task(1,0)
     env.now[0]+=301;env.set_now();t.finalize_task(1,0)
     env.now[0]+=10*86400;env.set_now()
+    env.gl.message.sender_address=env.sender;env.gl.message.origin_address=env.sender
     with pytest.raises(AssertionError):t.refund_task(1,0)
 
 def test_blocked_allocation_eventually_refundable(env):
@@ -106,7 +107,7 @@ def test_blocked_allocation_eventually_refundable(env):
     t._review=lambda task,challenge:'SATISFIED|'+'a'*64+'|'+'b'*64;t.evaluate_task(1,1)
     env.now[0]+=301;env.set_now();t.finalize_task(1,1)
     assert t.get_task(1,1).status==env.c.SATISFIED_BLOCKED
-    env.now[0]+=9*86400;env.set_now();t.refund_task(1,1)
+    env.now[0]+=9*86400;env.set_now();env.gl.message.sender_address=env.sender;env.gl.message.origin_address=env.sender;t.refund_task(1,1)
     assert t.get_accounting()['refunded']==6*10**17
 
 def test_double_challenge_rejected(env):
@@ -121,6 +122,7 @@ def test_zero_deposit_fails(env):
 
 def test_accounting_recovery_after_timeout(env):
     t=create(env);env.now[0]+=9*86400;env.set_now()
+    env.gl.message.sender_address=env.sender;env.gl.message.origin_address=env.sender
     t.refund_task(1,0);t.refund_task(1,1)
     a=t.get_accounting();assert a['funded']==a['paid']+a['refunded']+a['remaining']
     assert a['refunded']==10**18

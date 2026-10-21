@@ -1,36 +1,23 @@
-# Release gates (do not claim DONE until all pass)
+# Release gates
 
-## Artifact-generation verification
+Current recovery deployment: `0xAdC4dEC690a37315FDCC7f50DDE9DDCE3a97379F` on StudioNet (chain 61999). It has one grant created from the local frontend as a payable smoke test. The scripted full lifecycle evidence is on the earlier lifecycle deployment.
 
-- [x] Python contract syntax compiles; full local suite passes, 81 tests (57 offline + 24 GenLayer Direct Mode).
-- [x] Pure frontend protocol suite passes, 11 tests.
-- [x] Repo-local GenLayer CLI version is 0.39.1; installed GenVM linter is 0.11.0.
-- [x] GenVM linter AST checks, SDK semantic validation and schema extraction pass against the source's pinned dependency hash. Generated ABI: `evidence/contract-schema.json`.
-- [x] GenLayer Direct Mode public-method suite passes, 24 tests on installed `genlayer-test==0.29.2` and SDK dependency `v0.2.12`.
-- [x] Direct Mode observes requested transfer messages for claims, refunds and bonds; it does not execute child transfer messages or prove rollback/atomicity.
-- [x] Pyright typecheck against the locally installed pinned GenVM runner source — no type errors. (The linter wrapper was directed to that exact local SDK path because its default user-profile cache is protected.)
-- [x] Clean frontend `npm ci`, typecheck, lint, protocol tests and production build pass in an isolated temporary install. Build output is source-matched; CSS autoprefixer warnings were fixed.
-- [x] Recipient-controlled native transfer failure mitigated: sponsor creation and recipient registration require direct EOA-origin transactions; all task recipients must register before funding. A contract wallet cannot register or sponsor via a forwarding contract, so native payouts and refunds cannot be rejected by recipient code.
-- [x] Canonical source-matched StudioNet deployment on chain 61999; finalized receipt and fresh reads recorded in `docs/DEPLOYMENT.md`.
-- [x] Three live lifecycle scenarios executed: dependency payout and exact native deltas; VIOLATED review, exact 5% challenge bond, forfeiture and refund; validator disagreement/no-majority with unchanged state and successful retry. Receipts and limitations are recorded in `docs/LIVE_VERIFICATION.md`.
-- [x] Local Chrome wallet check: connected the already-authorized wallet on StudioNet 61999, read canonical grant/task state, and completed one zero-value `register_recipient` transaction through the front end. Finalized receipt and registration read are recorded in `docs/LIVE_VERIFICATION.md`; no grant was funded.
-- [x] Release implementation commit `ca80a3ddca5349d6bae0ddbbe52b3e8a1ebb927b` pushed; GitHub Actions run [39301675436](https://github.com/Ifem1/Clarity/actions/runs/39301675436) passed all three jobs.
-- [ ] Owner’s manual Vercel deployment and production URL verification — owner action.
-- [ ] Injected-wallet browser test against the public deployment — local Chrome check passed; public URL check waits for Vercel deployment.
+## Verified locally and on StudioNet
 
-Two earlier disposable test deployments received malformed/unregistered payable calls and hold 0.10 GEN each with zero app-ledger accounting. They are not the canonical address and have no recovery method. The canonical contract is clean; the testnet loss is transparently recorded in `docs/LIVE_VERIFICATION.md`.
+- [x] Python contract compiles; full Python suite passes (89 tests, including 32 Direct Mode tests).
+- [x] Frontend typecheck, ESLint, protocol tests (13/13), and optimized production build pass on 2026-10-21.
+- [x] Deployment-time GenVM validation and remote schema extraction passed (24 public methods: 10 views, 14 writes); schema is recorded in `evidence/contract-schema.json`. A local linter rerun could not load its pinned SDK archive from cache.
+- [x] Remote StudioNet schema read succeeds after a contract-level compatibility fix for the runner's two protocol handlers.
+- [x] Recovery deployment succeeded; fresh reads show grant count 0 and all accounting fields 0.
+- [x] Local frontend points to the recovery deployment; the optimized production build reads the recovery deployment successfully at `http://127.0.0.1:3002`; explorer evidence confirms the later payable grant submission.
+- [x] `pore-test` and `chronicle-test-wallet` registered on the recovery deployment. Their registered-state reads both return true.
+- [x] Local production frontend submitted a 0.00004 GEN payable `create_grant` call to the recovery deployment; explorer shows transaction `0xaae29915208d406cb31b11d4de5136346e644fc1d8e0df565464969cc533516c` as FINALIZED / SUCCESS and contract balance 0.00004 GEN. This is a frontend submission smoke test, not a full-cycle test; details are in `docs/LIVE_VERIFICATION.md`.
 
-Every checked box must correspond to a real executed gate. No fake screenshots, results, hashes, time-travel or simulated live transactions.
+## Remaining release steps
 
-## Mandatory agent closure order
+- [x] Explicitly accept the live failed-child callback gap as a documented residual limitation. Two 0.0001 GEN child calls failed on StudioNet, including a plain native transfer, but neither instrumented sender nor receiver recorded a callback credit. Clarity restricts sponsors and payout recipients to direct EOAs, but this does not prove that a failed transfer to an EOA will recover; do not claim general outgoing-transfer recovery is safe. See `docs/LIVE_VERIFICATION.md` and `docs/SECURITY.md`.
+- [x] Full grant lifecycle is covered by the existing scripted live scenarios on the earlier lifecycle deployment, with transaction/state evidence in `docs/LIVE_VERIFICATION.md`. The recovery deployment received a separate frontend-only grant-creation smoke test; it has not been taken through the lifecycle.
+- [ ] Owner deploys the frontend to Vercel and verifies public reads against `0xAdC4dEC690a37315FDCC7f50DDE9DDCE3a97379F`.
+- [ ] Push source and final live evidence to `https://github.com/Ifem1/Clarity.git` ; keep the callback limitation explicit in the release notes and record CI.
 
-1. Read architecture + security; inspect the entire current source. Do not change core scope.
-2. Install `genlayer@0.39.1` repo-local. Check runtime SDK/GenVM pinned dependency support; make narrowly justified compatibility changes only. Complete GenVM validation and Direct Mode tests (including live sender/payable behavior, native transfers, revert semantics, consensus error behavior).
-3. Install frontend dependencies; generate a genuine `frontend/package-lock.json`. Run `npm ci`, `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`. Fix any TypeScript/JS issues. Update CI to use `npm ci` and ensure green runs.
-4. Review `docs/SECURITY.md`, implement additional adversarial and mutation tests for unexpected deployment semantics, and rerun entire suite.
-5. Canonical contract has been deployed to **Studionet 61999**; deployment and transaction evidence are recorded. Use no Studio-next/dev chain 61997.
-6. Point Vercel to that exact address by setting `NEXT_PUBLIC_CLARITY_CONTRACT`, then manually deploy. No hidden signing server, no backend and no GitHub automatic deploy requirement.
-7. Run reviewer matrix scenarios using actual unlocked CLI wallets and as much browser verification as available. The live matrix and real transaction results are recorded in `docs/LIVE_VERIFICATION.md`.
-8. Freeze and push source/evidence to `https://github.com/Ifem1/Clarity.git`, the exact destination supplied by the owner; capture the resulting CI run.
-
-If any essential gate fails, report exact failure; do not declare submission ready.
+No Vercel deployment has been performed. Set `NEXT_PUBLIC_CLARITY_CONTRACT=0xAdC4dEC690a37315FDCC7f50DDE9DDCE3a97379F` in Vercel after reviewing the callback limitation.

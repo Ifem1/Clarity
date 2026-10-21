@@ -14,8 +14,8 @@ export function taskActions(task,grant,tasks,account,now){
   resolve:status===4&&Number(task.challenge_attempts)<3&&now<=Number(task.challenged_at)+86400&&(Number(task.challenge_attempts)===0||now>=Number(task.last_challenge_attempt_at)+60),
   recover:status===4&&now>=Number(task.challenged_at)+86400,
   activate:status===5&&deps.every(d=>[6,8].includes(Number(tasks[d]?.status))),
-  claim:status===6,
-  refund:status===7||([0,1,2,5].includes(status)&&now>=Number(grant.deadline)+604800)
+  claim:!!me&&recipient&&status===6,
+  refund:!!me&&sponsor&&(status===7||([0,1,2,5].includes(status)&&now>=Number(grant.deadline)+604800))
  };
 }
 export function parseGen(value){const s=String(value).trim();if(!/^\d+(\.\d{1,18})?$/.test(s))throw Error('Enter a valid GEN amount (up to 18 decimals).');const [a,b='']=s.split('.');return BigInt(a)*GEN_BASE+BigInt((b+'0'.repeat(18)).slice(0,18));}

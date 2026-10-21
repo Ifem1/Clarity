@@ -8,7 +8,7 @@ classes=[n for n in mod.body if isinstance(n,ast.ClassDef)]
 assert sum(x.name=='Clarity' for x in classes)==1
 classnode=next(n for n in classes if n.name=='Clarity')
 methods={n.name for n in classnode.body if isinstance(n,ast.FunctionDef)}
-required={'create_grant','submit_task','evaluate_task','challenge_task','resolve_challenge','finalize_task','activate_task','claim_task','recover_stalled_challenge','refund_task','get_grant','get_task','get_manifest','get_accounting'}
+required={'create_grant','submit_task','evaluate_task','challenge_task','resolve_challenge','finalize_task','activate_task','claim_task','recover_stalled_challenge','refund_task','get_grant','get_task','get_manifest','get_accounting','get_failed_transfer_recovery','recover_failed_transfer','get_bond_credit','claim_bond_credit'}
 assert required<=methods,'missing methods: '+','.join(sorted(required-methods))
 assert b'run_nondet_unsafe' in s and b'emit_transfer' in s
 record={'source_sha256':hashlib.sha256(s).hexdigest(),'contract_methods':sorted(methods),'deployment':'NOT_DEPLOYED','checks':'SOURCE_ONLY'}

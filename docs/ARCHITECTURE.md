@@ -19,13 +19,13 @@ The frontend and outside evidence publishers cannot change the authorized releas
 
 ## Direct EOA recipients
 
-The GenLayer runtime emits native transfers asynchronously and does not return failed outgoing child value to the sender. To prevent recipient code from deliberately rejecting a payout, each beneficiary first calls `register_recipient()` from a direct EOA transaction (`sender_address == origin_address`). The sponsor must also create a grant directly from an EOA, and every frozen recipient must already be registered. This excludes contract wallets and forwarding contracts as sponsors or payout destinations. Registration is permanent for a deployed Clarity contract.
+The GenLayer runtime emits native transfers asynchronously. The source implements `__on_errored_message__` and origin-owned recovery credits, but a controlled StudioNet child-message failure did not invoke a credit in either the sender or receiver probe. Treat failed outgoing transfer recovery as unproven until the callback is demonstrated or a different settlement mechanism is adopted. Beneficiary claims and sponsor refunds require the frozen party's direct EOA transaction; each beneficiary registers before funding, and contract wallets/forwarders are excluded. Registration is permanent per deployment.
 
 ## Ordered dependency graph
 
 2–8 tasks ordered during creation. Each node may only depend on indices lower than its own. This proves acyclicity without a recursive on-chain search. Allocation basis points sum to exactly 10,000 and each amount is fixed at creation. Integer rounding remainder belongs to the last node. Graph nodes cannot be edited after creation.
 
-A primary SATISFIED result is only *provisional* until the challenge period closes or resolves. Final SATISFIED becomes READY if all prerequisites are already READY/CLAIMED; otherwise SATISFIED_BLOCKED. `activate_task` is permissionless and requires every direct prerequisite READY/CLAIMED. Because each prerequisite is itself recursively gated, this suffices for the transitive graph. `claim_task` can be called by anyone but transfers only to the original recipient.
+A primary SATISFIED result is only *provisional* until the challenge period closes or resolves. Final SATISFIED becomes READY if all prerequisites are already READY/CLAIMED; otherwise SATISFIED_BLOCKED. `activate_task` is permissionless and requires every direct prerequisite READY/CLAIMED. Because each prerequisite is itself recursively gated, this suffices for the transitive graph. `claim_task` must be called by the original recipient directly.
 
 ## Evidence authority and consensus
 
@@ -50,13 +50,13 @@ The source bundle hash is not a proof that the source publisher is honest, nor t
 | REJECTED | permissionless refund_task | REFUNDED to original sponsor |
 | AWAITING/SUBMITTED/RETRYABLE/SATISFIED_BLOCKED after deadline+7d | refund_task | REFUNDED to sponsor |
 
-A challenged result never transitions to a payout on timeout alone. Stalled-challenge recovery returns the bond, invalidates the provisional state and permits re-evaluation (if the original review cap and grace permit it) or eventual refund. A legitimate but blocked award whose prerequisites never become payable can be refunded after grace. An unclaimed READY award belongs to its recipient indefinitely; sponsor cannot confiscate it.
+A challenged result never transitions to a payout on timeout alone. Stalled-challenge recovery finalizes the original provisional state and assigns the bond as a pull credit. A legitimate but blocked award whose prerequisites never become payable can be refunded after grace. An unclaimed READY award belongs to its recipient indefinitely; sponsor cannot confiscate it.
 
 ## Economic invariant
 
 For each grant `total = remaining + paid + refunded`, and across all grants same for global escrow counters. Challenge reserve is separate: `bonds_received = bonds_locked + bonds_returned + bonds_forfeited`.
 
-Any user may initiate settlement functions, but no caller can select payout address or amount: both are frozen at creation. State and ledgers update before `emit_transfer`; only direct EOAs are valid transfer recipients, so recipient contract code cannot revert the transfer. Live Studionet tests must still verify actual delivery and balance deltas.
+Only the frozen EOA recipient or sponsor may initiate transfers. State and ledgers update before `emit_transfer`; if GenVM delivers the errored-message callback, returned value is credited for owner-only recovery. Live StudioNet failure-path verification is still required.
 
 ## Non-features
 

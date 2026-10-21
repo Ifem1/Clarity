@@ -1,12 +1,13 @@
 # Live contract verification
 
+> **Historical lifecycle deployment:** corrected source SHA-256 `75405b4ae80e75be12958c4caad422f1af02312884b4b8f98c69e6dda23c2` at `0x41428Aa8357fF8cC867b0fc98133E54d430510d0` is the address used for the lifecycle scenarios below. The current recovery revision is `0xAdC4dEC690a37315FDCC7f50DDE9DDCE3a97379F`; its schema and initial state are recorded later. Only finalized state changes are counted.
+
 **Canonical deployment:** [`0x449f08f7407559D3e7538979B666D08ec35536B8`](https://explorer-studio.genlayer.com/address/0x449f08f7407559D3e7538979B666D08ec35536B8), StudioNet chain 61999. All transactions below were sent to this contract unless explicitly identified as abandoned test deployments. A transaction counts as successful only when finalized and its GenVM execution result is `SUCCESS`.
 
 ## Local validation (not live-chain evidence)
 
-- Offline state model: 57 passed. GenLayer Direct Mode: 24 passed. Combined: 81 passed.
-- Frontend protocol tests: 11 passed. TypeScript, ESLint and optimized Next build passed in the isolated frontend install configured with the canonical address.
-- GenVM linter AST checks, SDK semantic validation, schema extraction and pinned-runner Pyright typecheck passed. Schema: 18 methods (7 views, 11 writes).
+- Current recovery checkout: 57 offline tests and 32 GenLayer Direct Mode tests passed; frontend protocol tests 13/13, TypeScript, ESLint, optimized Next build, AST lint and Pyright passed.
+- An earlier source revision passed GenVM lint, SDK semantic validation and schema extraction with 20 methods. The recovery revision passes GenVM validation and its 24-method schema is recorded in `evidence/contract-schema.json`; the deployed contract also returns that schema remotely.
 - Direct Mode records native transfer intents but does not execute child messages or prove live recipient balance changes. Scenario A below provides that live proof for an EOA recipient.
 
 ## Initial canonical deployment
@@ -101,6 +102,103 @@ Final chronicle-test-wallet balance: 997069000000000000010 wei
 
 Using the already-unlocked Chrome wallet connected to the local production build, the wallet owner approved one `register_recipient()` transaction from `0xd6423ae82a975d55c6ceac222827a727325e0459` to the canonical contract. No GEN value was attached and no grant was created or funded.
 
+## Corrected source deployment and live checks
+
+```text
+Contract: 0x41428Aa8357fF8cC867b0fc98133E54d430510d0
+Deploy tx: 0xaf53b63c8d34e0a6f55756aee9ef0166d252d608a8d7f2281001b1faf414f0c8
+Receipt: FINALIZED / MAJORITY_AGREE / leader GenVM SUCCESS
+Source SHA-256: 75405b4ae80e75be12958c4caad422f1af02312884b4b8f98c69e6dda23c2
+Network: StudioNet, chain ID 61999
+Schema: includes get_funding_recovery, recover_failed_funding, and evidence_json manifests
+Source parity: getContractCode SHA-256 matched local source
+Frontend local contract: NEXT_PUBLIC_CLARITY_CONTRACT points to this address
+```
+
+The contract was initially empty. Both already-unlocked recipients registered successfully: `pore-test` (`0xc77170b966f232473da92655e670f2e277cac5a9`, tx `0x2cec7bef67f2c7562db8402cdfc8ce9368fa538bf24c14195f6ba07660241c1e`) and `chronicle-test-wallet` (`0x6b476bf35c4968f3f1775c0ca2110591b4b5fcbe`, tx `0x11ada17474c033cd39cf190f34f70a0d68983c564b3a6bd3141ada5c1a1b0932`).
+
+The corrected payable validation failure path was exercised with one wei. Invalid grant creation produced no grant and credited one wei to the sending sponsor's recovery balance (`0x355ed4835fc0ca2fe9e6ab66f0d0a0fadd82b5d394c9ce3e770b07ba4e1f1c5e`); the origin recovered that wei (`0xbc8e17de5be7ae5c6767d65860b6b7ba0786be7949906cd3d148b2eaf9378373`). A second validation failure from duplicate registrable source domains also recovered 0.04 GEN (`0xe3fa881a79623b6f1eded8d88247b3aa82f27b439f16aceb77832acea2551a61`).
+
+Three early full-size scenarios were funded before evidence snapshots exposed the live source-size issue: grant 1 holds 0.10 GEN, grant 2 holds 0.04 GEN, and grant 3 holds 0.04 GEN. Grant 1 task evaluations finalized as transactions but returned `SOURCE_TOO_LARGE`; task 3 task 1 did likewise. These allocations remain unsettled and are refundable only after each grant's deadline plus the seven-day review grace. Grant 2 has submitted tasks but no evaluation. Do not count these as completed payouts.
+
+Grant 4 is the compact-source live lifecycle probe. It escrowed 0.00004 GEN, with 0.00002 / 0.000012 / 0.000008 GEN allocations. All three task submissions finalized. Task 0 evaluated successfully as `SATISFIED` with source digest `81305121f7a16458065fca3c05a0070d6470bd3f1012606e04eed7b455d8f38f`; the stored primary manifest contains the fetched NASA event table and the independent ESA caption, both within size limits. The sponsor challenged with the exact 0.000001 GEN bond (`0xbf6e0d6b6ffe450841da2ec350554c47ba26b4f93aa4072c364b035efb93a2c3`).
+
+Challenge resolution finalized successfully (`0xe07fd67b66468d36d2d0c7ca418a138fe246cb36b72a4b5e8e08f133535281ad`). It classified the frozen challenge snapshot as `SATISFIED`; task 0 became READY and the sponsor's 0.000001 GEN bond was forfeited under the contract outcome. Pore claimed task 0's 0.00002 GEN (`0x613238bbbaf96d91aae64b04927dc18c709ce8250691affdf2716244dad27479`). Task 1 evaluations `0x85e199d6ac97ee0a4f86c7300d57937fceb79df0ff7b0c7dcb18da7f4f1aef97`, `0xe611ec4c63cb7c76420f7fd3211f24039332b107c19e674e831a398aec88ae0`, and `0xe1bf8a242491323d2960e2f75964fc8e0058d6b58d911f007d16bf068aad7156` returned `UNDETERMINED` without state changes. A later attempt finalized successfully (`0x276411ff3135b8951172ff296788874058ff81684bc292b5874a29c9437b05e9`) as provisional `SATISFIED` using the same compact snapshot. After its five-minute challenge period, task 1 finalized (`0x08305b41ba3407a39d1f18c19f16e31a6faeade99509f0f012c6a819d9b9d376`) directly as READY because task 0 was already CLAIMED; its 0.000012 GEN payment finalized to chronicle-test-wallet (`0xee09bc542e54c8054da18a6d0355695395575e1d7883534ec42501e6037d4cf2`).
+
+Task 2 evaluation finalized (`0xf5459ca8272a2f5a1c1523496b710e9b354cf9bd4cce6d373e350a4e65bb2d15`) as provisional `VIOLATED`, with both compact evidence sources recorded and `too_large=false`. After the challenge period, task 2 finalized rejected (`0xa2a2d4517f4b93c034ffc93f14101fffff738a38c69a3c5549823f3b06da4e2f`) and its 0.000008 GEN refund to the sponsor finalized (`0xfe345a6909a98c883aac24b46d7870fc7f5eb9c67274c3f2d4105a14c9ed0c8c`). Final grant 4 accounting is funded 0.00004 GEN = paid 0.000032 + refunded 0.000008 + remaining 0. Global accounting is funded 0.18004 GEN = paid 0.000032 + refunded 0.000008 + remaining 0.18 GEN; bond accounting is received 0.000001 = forfeited 0.000001, locked/returned 0. The remaining 0.18 GEN in grants 1–3 was funded in earlier probes and is not yet refundable until each deadline plus seven-day review grace: grant 1 after 2026-10-28 20:40:55 UTC, grant 2 after 2026-10-28 20:52:36 UTC, and grant 3 after 2026-10-28 20:57:46 UTC.
+
+The local production frontend detail page was refreshed and showed task 0 and task 1 `CLAIMED`, task 2 `REFUNDED`, and zero remaining for grant 4. The registry listed all four live grants. Vercel was not deployed.
+
+Local production frontend at `http://127.0.0.1:3000` was refreshed against the corrected address and successfully rendered the live grant registry, including grants 1–4. Vercel was not deployed.
+
+## Current local safety regression coverage
+
+The current checkout adds Direct Mode and adversarial checks for payable validation failures, origin-owned fallback recovery, simulated failed-child callback credits, owner-only transfer recovery and bond credits, source snapshot integrity, oversized evidence rejection, and dependency-refund ordering. Direct Mode does not execute real child messages or prove chain rollback/callback delivery.
+
+## Recovery revision deployment and failed-child callback probe
+
+```text
+Recovery contract: 0xAdC4dEC690a37315FDCC7f50DDE9DDCE3a97379F
+Deployment tx: 0x55f92c4920c2e8f7bd94e6be3c0ccedaacaf22ea46af25a52dc8aba6090f82c8
+Source SHA-256: fa0378e65c8e1db32e3e93dd0ed910311b5433bcf9d754e4f54b323da9b2ab1e
+Network: StudioNet, chain ID 61999
+Remote schema: SUCCESS, 24 public methods (10 views, 14 writes)
+Initial get_grant_count: 0
+Initial accounting: all fields 0
+```
+
+On 2026-10-21, the already-unlocked `pore-test` (`0xc77170b966f232473da92655e670f2e277cac5a9`) and `chronicle-test-wallet` (`0x6b476bf35c4968f3f1775c0ca2110591b4b5fcbe`) accounts each registered on this recovery deployment. Transactions were `0x8af1dbe2cc57137264065de03aec55c72714a77ea32b3c2e988bbb1ad3908160` and `0xc741c42ff209e532c4129476e195f2a82ed39c86bef10728d4ee0f2c11ff5f31`; subsequent `is_registered_recipient` reads returned `true` for both. A local frontend payable grant smoke test was later recorded below.
+
+The local production frontend submitted one payable `create_grant` transaction to verify grant creation. The StudioNet explorer lists it as finalized with GenVM SUCCESS; the 0.00004 GEN escrow and transaction are recorded below. This smoke test validates frontend transaction submission only; lifecycle actions for this grant were not run.
+
+### Local frontend payable grant smoke test
+
+```text
+Transaction: 0xaae29915208d406cb31b11d4de5136346e644fc1d8e0df565464969cc533516c
+Explorer: https://explorer-studio.genlayer.com/tx/0xaae29915208d406cb31b11d4de5136346e644fc1d8e0df565464969cc533516c
+Contract: 0xAdC4dEC690a37315FDCC7f50DDE9DDCE3a97379F
+Method: create_grant
+Status: FINALIZED / GenVM SUCCESS / consensus Accepted
+Value: 0.00004 GEN
+Frontend: local production build at http://127.0.0.1:3002/new
+Purpose: frontend submission smoke test only; scripted lifecycle evidence is separate.
+```
+
+The explorer contract page lists this finalized successful call. Its dedicated transaction-detail page returned “Failed to fetch transaction” during verification, so the contract transaction row is the source for the receipt status. This smoke test does not claim to have exercised task review, challenge, payout or refund controls.
+Local frontend verification on 2026-10-21: `npm test` passed 13/13 protocol tests; `npm run typecheck`, `npm run lint`, and `npm run build` passed. The local production page at `http://127.0.0.1:3002/` successfully read the recovery contract and displayed its expected empty grant registry. Python tests passed 89/89. The GenVM linter could not load its pinned SDK archive from the local cache during this rerun; deployment-time validation and remote schema extraction for this exact recovery source had succeeded earlier.
+
+The first revision deployment at `0x71093Fd7558988E295cc01f5651ad792DA6a5120` could not return its remote ABI schema because the network SDK included the public protocol handlers `__handle_undefined_method__` and `__on_errored_message__` as ABI methods. The recovery source now overrides `__get_schema__` and filters protocol handlers while retaining the runtime callbacks. The redeployed contract's remote schema query succeeds.
+
+A disposable payable receiver deliberately raised `gl.vm.UserError` from `reject_transfer`. The sender emitted 0.0001 GEN through a finalized internal child message:
+
+```text
+Probe parent tx: 0x833ec8a410e7e82afd4cb64941d8231eca876bbc1b82b8a2a22485b3d2d9d823
+Failed child tx: 0x564603699bb2706734a3a761633a7535a7042da1b1cb2439e54996f163d235be
+Sender probe: 0x0ad93de0b2492380aD997Ad215e6C3Faee4a20CF
+Receiver: 0xb3941AaD8a4AcA807b732225c568F510B1A5b8C2
+Child result: FINALIZED / MAJORITY_AGREE, GenVM execution ERROR, value_credited=true
+Sender callback get_total_credits: 0
+Receiver callback get_total_credits: 0
+```
+
+This live result does not prove callback recovery: both counters stayed zero after finalization. The error is retained as a failed test, not a passing recovery. The scripted full lifecycle evidence above applies to the earlier lifecycle deployment, not this recovery deployment. The recovery deployment has one escrow funded through the local frontend smoke test; no lifecycle actions have been run against this smoke-test grant. Vercel was not deployed.
+
+The probe was repeated using a plain native transfer (`emit_transfer`) to a receiver whose `__receive__` raises `gl.vm.UserError` and whose `__on_errored_message__` records a recovery credit:
+
+```text
+Probe receiver: 0x0a4CEa3d5F63478424b17B9DB546B3A16f61a4cE
+Probe sender: 0x0AFe787a477b65E1045712Bd64E151313FD45bE3
+Parent tx: 0xc6885975708c1e8b6738f4a815edca6887bf7e9c2f7601eb2aefa09ce28e465a
+Child tx: 0xf491c997fb85653ac5fc1f4e18bb4a375c6693e243abbaf0a9266a5af7b23574
+Transfer value: 0.0001 GEN
+Parent: FINALIZED / MAJORITY_AGREE / GenVM SUCCESS
+Child: FINALIZED / MAJORITY_AGREE / GenVM execution ERROR / value_credited=true
+Sender get_total_credits(): 0
+Receiver get_total_credits(): 0
+```
+
+This second live probe also failed to demonstrate callback delivery or recovery. We explicitly accept this as a documented residual limitation for the current release: outgoing-transfer recovery is not proven safe on StudioNet and must not be described as generally recoverable. Clarity restricts sponsors and payout recipients to direct EOA transactions, but the probes do not prove recovery even for a permitted EOA recipient if GenVM fails before delivering the callback. The receiver's protocol callback is not exposed as an ordinary read method; its dedicated credit getter is the observed zero. Probe sender funding and test transactions were made with the already-unlocked test account, with no grant created.
+
 ```text
 Transaction: 0x207c8947e943045f531bdf572303f8a63e54d43c74d6d1c0be27381a5250c2e0
 Receipt: FINALIZED / MAJORITY_AGREE / GenVM SUCCESS
@@ -116,8 +214,10 @@ Two disposable deployments are not canonical. Each received a failed payable `cr
 
 ## Remaining external release checks
 
-- Push the final source/evidence commit to `https://github.com/Ifem1/Clarity.git` and record the CI run.
-- The owner deploys the frontend to Vercel using `NEXT_PUBLIC_CLARITY_CONTRACT=0x449f08f7407559D3e7538979B666D08ec35536B8`.
+- Run and record the complete lifecycle on the recovery deployment once an EIP-1193 wallet is available to submit the payable grant creation.
+- The failed-child callback gap is explicitly accepted as a residual limitation; do not claim general outgoing-transfer recovery is safe. See `docs/SECURITY.md`.
+- The owner deploys the frontend to Vercel using `NEXT_PUBLIC_CLARITY_CONTRACT=0xAdC4dEC690a37315FDCC7f50DDE9DDCE3a97379F`.
 - Verify injected-wallet behavior and public production reads after the Vercel URL exists.
+- Push the source and final live evidence to the owner-supplied GitHub repository and capture the CI run after the current-deployment lifecycle is complete.
 
 No receipt, digest, balance or validator result in this file is simulated. Failed transactions are retained as failures, not counted as successful scenarios.

@@ -40,6 +40,13 @@
       "ret": "any",
       "payable": true
     },
+    "claim_bond_credit": {
+      "params": [],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "any",
+      "payable": false
+    },
     "claim_task": {
       "params": [
         [
@@ -126,6 +133,39 @@
       "readonly": true,
       "ret": "dict"
     },
+    "get_bond_credit": {
+      "params": [
+        [
+          "owner",
+          "address"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "int"
+    },
+    "get_failed_transfer_recovery": {
+      "params": [
+        [
+          "owner",
+          "address"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "int"
+    },
+    "get_funding_recovery": {
+      "params": [
+        [
+          "owner",
+          "address"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "int"
+    },
     "get_grant": {
       "params": [
         [
@@ -185,7 +225,8 @@
         "label": "string",
         "source_digest": "string",
         "source_count": "int",
-        "note": "string"
+        "note": "string",
+        "evidence_json": "string"
       }
     },
     "get_status_names": {
@@ -247,6 +288,20 @@
       "kwparams": {},
       "readonly": true,
       "ret": "bool"
+    },
+    "recover_failed_funding": {
+      "params": [],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "any",
+      "payable": false
+    },
+    "recover_failed_transfer": {
+      "params": [],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "any",
+      "payable": false
     },
     "recover_stalled_challenge": {
       "params": [

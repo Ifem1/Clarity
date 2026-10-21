@@ -4,7 +4,7 @@
 
 **Clarity** is a GenLayer-native, dependency-aware grant escrow. A sponsor funds 2–8 ordered tasks, each with its own immutable recipient, allocation, public evidence authorities and prerequisites. GenLayer validators independently retrieve the frozen evidence and agree on a bounded semantic classification; deterministic contract code determines claimability, bonded disputes and exact native GEN transfers.
 
-**Current status: canonical StudioNet deployment and native live lifecycle proofs recorded; final source push and Vercel deployment remain.** The canonical contract is `0x449f08f7407559D3e7538979B666D08ec35536B8` on chain 61999. Sponsors and beneficiaries submit directly from EOAs; beneficiaries register on this contract before a grant is funded. See `docs/DEPLOYMENT.md`, `docs/RELEASE_GATES.md` and `docs/LIVE_VERIFICATION.md` for hashes, receipts and live accounting.
+**The recovery revision is deployed on StudioNet at `0xAdC4dEC690a37315FDCC7f50DDE9DDCE3a97379F`.** Its remote schema passes; the two test recipients are registered, but no grant has yet been created on this revision. The previous full lifecycle belongs to the earlier deployment and has not been repeated here. The local frontend checks pass; the accessible browser session has no injected wallet, so its payable grant cannot be submitted yet. Two live failed-child tests produced no callback recovery credit. This is explicitly accepted as a residual limitation; general outgoing-transfer recovery is unproven, including for registered EOAs. Vercel has not been updated; the owner will deploy the frontend. Earlier disposable deployments retain 0.20 GEN without a recovery method and cannot be patched in place. See `docs/DEPLOYMENT.md`, `docs/RELEASE_GATES.md` and `docs/LIVE_VERIFICATION.md`.
 
 ## What Clarity does
 
@@ -15,12 +15,15 @@
 - Directed graph is *topologically ordered*: each task may depend only on earlier tasks. No cyclic or forward references.
 - Exactly **10,000 bps** funded and allocated; rounding dust belongs to the last task at creation.
 - Every task has 2–3 independent public HTTPS sources, at least one required PRIMARY and one required CORROBORATING; optional 0–2 distinct pre-authorised CHALLENGE sources.
-- Every validator independently renders the sources and classifies `SATISFIED`, `VIOLATED` or `INCONCLUSIVE`. Incomplete/invalid output remains non-payable.
-- Custom GenLayer `run_nondet_unsafe` compares an identical **scalar token + primary source digest + combined source digest**. No dict-vs-string comparison or consensus on arbitrary reasoning prose.
-- Challenge: issuer-side sponsor may challenge a SATISFIED result; recipient may challenge a VIOLATED result. Exact 5% task-allocation bond, subsequent independent re-review, deterministic forfeiture/return.
-- A recipient must register from its own direct EOA wallet before the sponsor can fund a grant; contract wallets are rejected so recipient code cannot revert the native transfer. A satisfied node becomes READY only if **all prerequisites are READY or CLAIMED**; claim moves native GEN strictly to the frozen recipient.
+- Every validator independently renders complete sources up to 2,200 characters each and classifies `SATISFIED`, `VIOLATED` or `INCONCLUSIVE`. Larger rendered sources fail closed; no evidence is silently cut off at a character boundary.
+- A provisional decision stores the exact public primary evidence snapshot in its manifest. Challenges re-evaluate that snapshot, so a later publisher edit cannot replace the evidence that supported the original result.
+- Custom GenLayer `run_nondet_unsafe` compares an identical evidence-bearing JSON result with the classification and primary/combined source digests. No consensus on arbitrary reasoning prose.
+- Challenge: issuer-side sponsor may challenge a SATISFIED result; recipient may challenge a VIOLATED result. Exact 5% task-allocation bond and deterministic forfeiture/return. Challenge URLs are closed at funding; a challenger may submit a rationale but cannot add URLs. If resolution stalls, the original provisional result is finalized and the bond becomes a pull credit.
+- Expected grant-validation errors and unknown-selector calls record incoming GEN as a recovery credit owned by the original EOA. The contract implements a GenVM errored-message callback, but two controlled failed children on StudioNet produced no recovery credit. This limitation is explicitly accepted for the current release; do not rely on or claim general outgoing-transfer recovery. Bond outcomes are pull credits. Fatal VM/ABI failures before dispatch and empty-calldata transfers without a supported receive handler remain outside the funding-recovery protection.
+- A recipient must register from its own direct EOA wallet before the sponsor can fund a grant; contract wallets are rejected so recipient code cannot revert the native transfer. A satisfied node becomes READY only if **all prerequisites are READY or CLAIMED**; only the frozen recipient may initiate the claim transfer.
 - Unverified, rejected, expired and stalled states have constrained reclaim or refund paths; no arbitrary sponsor seizure of a READY or CLAIMED task.
-- Deterministic accounting: `total = remaining + paid + refunded`, and bond ledger `received = locked + returned + forfeited`.
+- A `SATISFIED_BLOCKED` allocation is refundable after the grace period only when a prerequisite is still not `READY` or `CLAIMED`. If a blocked allocation is refunded before a late prerequisite completes, the refund is final.
+- Deterministic escrow accounting: `total = remaining + paid + refunded`, separate from recoverable failed-funding credits. Bond ledger: `received = locked + returned + forfeited`.
 
 ## Repo structure
 
@@ -47,11 +50,11 @@ npm --prefix frontend run lint
 npm --prefix frontend run build
 ```
 
-The current host passed 81 Python tests (57 offline and 24 GenLayer Direct Mode), 11 frontend protocol tests, TypeScript, ESLint, production build, GenVM lint, pinned SDK semantic validation/typecheck and schema extraction. Three live StudioNet scenarios exercised dependency payout, a challenged VIOLATED result with bond forfeiture/refund, and fail-closed no-majority recovery. Exact evidence and remaining release gates are recorded in `docs/RELEASE_GATES.md`.
+Local tests and build status for this recovery revision are recorded in `docs/RELEASE_GATES.md`. The previous deployed source address predates the added recovery callback and pull-credit methods, and must not be paired with the updated frontend. Live child-transfer failure recovery still requires a controlled test before it can be described as proven.
 
-## Deploying (agent-owned, never simulated)
+## Deployment boundary
 
-The canonical contract is deployed and locally configured in `frontend/.env.local` as `NEXT_PUBLIC_CLARITY_CONTRACT=0x449f08f7407559D3e7538979B666D08ec35536B8`. For the owner’s manual Vercel deployment, set that same variable in the Vercel project and build from `frontend/`. Reads are deliberately empty/disabled when no address is configured; no locally invented records appear in the public UI.
+The local environment file points to the recovery deployment. Set `NEXT_PUBLIC_CLARITY_CONTRACT=0xAdC4dEC690a37315FDCC7f50DDE9DDCE3a97379F` in Vercel when deploying the frontend; the owner will perform that deployment after reviewing the callback limitation.
 
 ## Comparison / originality
 
@@ -61,6 +64,6 @@ The canonical contract is deployed and locally configured in `frontend/.env.loca
 
 ## Trust boundary
 
-No issuer or admin supplies a validator verdict or a payout amount. Public evidence is an external trust input; multiple URLs do not prove legal publisher independence, semantic truth or immutable byte history. A content digest means only that validators independently observed the same bounded text. If evidence changes during a challenge, Clarity returns inconclusive rather than granting payment. See `docs/SECURITY.md`.
+No issuer or admin supplies a validator verdict or a payout amount. Public evidence is an external trust input; multiple URLs do not prove legal publisher independence or semantic truth. A content digest means only that validators independently observed the same bounded text. A challenge reuses the provisional primary-evidence snapshot; if additional challenge evidence is unavailable or cannot resolve, recovery finalizes the original provisional result. See `docs/SECURITY.md`.
 
 MIT licence for project-authored source. Third-party packages retain their own licences.

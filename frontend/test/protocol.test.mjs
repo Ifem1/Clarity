@@ -32,6 +32,13 @@ test('submission and challenge depend on frozen party roles',()=>{
  a.equal(taskActions(provisional,grant,[],'0xaaa',1000).challenge,true);
  a.equal(taskActions(provisional,grant,[],'0xbbb',1000).challenge,false);
 });
+test('only direct recipient can claim and sponsor can refund',()=>{
+ const ready={...task,status:6}, rejected={...task,status:7};
+ a.equal(taskActions(ready,grant,[],'0xbbb',1000).claim,true);
+ a.equal(taskActions(ready,grant,[],'0xaaa',1000).claim,false);
+ a.equal(taskActions(rejected,grant,[],'0xaaa',1000).refund,true);
+ a.equal(taskActions(rejected,grant,[],'0xbbb',1000).refund,false);
+});
 test('challenge recovery and retry use exact time boundaries',()=>{
  const challenged={...task,status:4,challenged_at:100,challenge_attempts:1,last_challenge_attempt_at:950};
  a.equal(taskActions(challenged,grant,[],'',1000).resolve,false);

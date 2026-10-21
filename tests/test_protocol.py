@@ -28,6 +28,8 @@ def create(env, amount=10**18, rows=None):
     env.gl.message.value=amount
     t.create_grant('Public data','Grant for reproducible public data work',int(env.now[0])+86400,300,amount,json.dumps(rows))
     env.gl.message.value=0
+    if t.get_grant_count()==0:
+        raise AssertionError('grant validation failed; payable value is recoverable')
     return t
 
 def review(env,t,n,label):
@@ -46,8 +48,11 @@ def test_graph_good(env):
 def test_recipients_must_self_register_from_eoa(env):
     t=env.c.Clarity();rows=tasks(env)
     env.gl.message.value=10**18
-    with pytest.raises(AssertionError,match='register from its own EOA'):
-        t.create_grant('Public data','Grant for reproducible public data work',int(env.now[0])+86400,300,10**18,json.dumps(rows))
+    t.create_grant('Public data','Grant for reproducible public data work',int(env.now[0])+86400,300,10**18,json.dumps(rows))
+    assert t.get_grant_count()==0
+    assert t.get_funding_recovery(env.sender)==10**18
+    t.recover_failed_funding()
+    assert env.transfers[-1]==(env.sender,10**18)
     env.gl.message.sender_address=env.recipient
     env.gl.message.origin_address=env.sender
     with pytest.raises(AssertionError,match='direct EOA transaction'):
@@ -62,8 +67,11 @@ def test_sponsor_must_submit_directly_from_eoa(env):
     env.gl.message.sender_address=env.sender
     env.gl.message.origin_address=env.recipient
     env.gl.message.value=10**18
-    with pytest.raises(AssertionError,match='sponsor must submit directly from an EOA'):
-        t.create_grant('Public data','Grant for reproducible public data work',int(env.now[0])+86400,300,10**18,json.dumps(rows))
+    t.create_grant('Public data','Grant for reproducible public data work',int(env.now[0])+86400,300,10**18,json.dumps(rows))
+    assert t.get_grant_count()==0
+    assert t.get_funding_recovery(env.recipient)==10**18
+    env.gl.message.sender_address=env.recipient
+    t.recover_failed_funding()
 
 def test_bad_graph_cycle_forward_reference(env):
     rows=tasks(env);rows[0]['dependencies']=[1]
@@ -71,15 +79,16 @@ def test_bad_graph_cycle_forward_reference(env):
 
 def test_bad_graph_allocations(env):
     rows=tasks(env);rows[1]['allocation_bps']=5999
-    with pytest.raises(ValueError):create(env,rows=rows)
+    with pytest.raises((AssertionError,ValueError)):create(env,rows=rows)
 
 def test_duplicate_deps(env):
     rows=tasks(env); rows[1]['dependencies']=[0,0]
-    with pytest.raises(ValueError):create(env,rows=rows)
+    with pytest.raises((AssertionError,ValueError)):create(env,rows=rows)
 
 def test_exact_native_value(env):
     t=env.c.Clarity();env.gl.message.value=3
-    with pytest.raises(AssertionError):t.create_grant('A','B',int(env.now[0])+86400,300,10**18,json.dumps(tasks(env)))
+    t.create_grant('A','B',int(env.now[0])+86400,300,10**18,json.dumps(tasks(env)))
+    assert t.get_funding_recovery(env.sender)==3
 
 def test_non_party_cannot_submit(env):
     t=create(env)
@@ -95,7 +104,10 @@ def test_dependency_blocks_payment(env):
     env.gl.message.sender_address=env.recipient;t.submit_task(1,0)
     review(env,t,0,'SATISFIED')
     t.activate_task(1,1)
-    t.claim_task(1,0);t.claim_task(1,1)
+    env.gl.message.sender_address=env.recipient;env.gl.message.origin_address=env.recipient
+    t.claim_task(1,0)
+    env.gl.message.sender_address=env.third;env.gl.message.origin_address=env.third
+    t.claim_task(1,1)
     assert t.get_accounting()['paid']==10**18
     assert t.get_accounting()['remaining']==0
     assert sum(a for _,a in env.transfers)==10**18
@@ -105,6 +117,7 @@ def test_violation_refund(env):
     t=create(env);env.gl.message.sender_address=env.recipient;t.submit_task(1,0)
     review(env,t,0,'VIOLATED')
     assert t.get_task(1,0).status==env.c.REJECTED
+    env.gl.message.sender_address=env.sender;env.gl.message.origin_address=env.sender
     t.refund_task(1,0)
     assert t.get_accounting()['refunded']==4*10**17
     with pytest.raises(AssertionError):t.refund_task(1,0)
@@ -123,6 +136,10 @@ def test_challenge_success_returns_bond_and_blocks_payment(env):
     assert t.get_task(1,0).status==env.c.REJECTED
     assert t.get_accounting()['bonds_returned']==bond
     assert t.get_accounting()['bonds_locked']==0
+    assert t.get_bond_credit(env.sender)==bond
+    env.gl.message.sender_address=env.sender;env.gl.message.origin_address=env.sender
+    t.claim_bond_credit()
+    assert t.get_bond_credit(env.sender)==0
     t.refund_task(1,0)
     assert t.get_accounting()['remaining']==6*10**17
 
@@ -131,14 +148,18 @@ def test_challenge_failure_forfeits_bond(env):
     t._review=lambda task,challenge:'VIOLATED|'+'a'*64+'|'+'b'*64
     t.evaluate_task(1,0)
     env.gl.message.sender_address=env.recipient
+    env.gl.message.origin_address=env.recipient
     bond=2*10**16;env.gl.message.value=bond
     t.challenge_task(1,0,'Cite the published primary source')
     env.gl.message.value=0
     t.resolve_challenge(1,0)
     assert t.get_accounting()['bonds_forfeited']==bond
+    assert t.get_bond_credit(env.sender)==bond
+    env.gl.message.sender_address=env.sender;env.gl.message.origin_address=env.sender
+    t.claim_bond_credit()
     assert env.transfers[-1][0]==env.sender
 
-def test_stalled_challenge_refunds_bond_fail_closed(env):
+def test_stalled_challenge_refunds_bond_and_finalizes_original_label(env):
     t=create(env);env.gl.message.sender_address=env.recipient;t.submit_task(1,0)
     t._review=lambda task,challenge:'SATISFIED|'+'a'*64+'|'+'b'*64
     t.evaluate_task(1,0)
@@ -148,14 +169,22 @@ def test_stalled_challenge_refunds_bond_fail_closed(env):
     env.gl.message.value=0
     env.now[0]+=86401;env.set_now()
     t.recover_stalled_challenge(1,0)
-    assert t.get_task(1,0).status==env.c.RETRYABLE
+    assert t.get_task(1,0).status==env.c.READY
+    assert t.get_task(1,0).final_label=='SATISFIED'
     assert t.get_accounting()['bonds_locked']==0
     assert t.get_accounting()['bonds_returned']==bond
     assert t.get_task(1,0).paid==0
+    env.gl.message.sender_address=env.sender;env.gl.message.origin_address=env.sender
+    t.claim_bond_credit()
 
-def test_expiry_refund_permissionless(env):
+def test_expiry_refund_is_sponsor_only(env):
     t=create(env);env.now[0]+=9*86400;env.set_now()
     env.gl.message.sender_address=env.third
+    env.gl.message.origin_address=env.third
+    with pytest.raises(AssertionError,match='sponsor must refund directly'):
+        t.refund_task(1,0)
+    env.gl.message.sender_address=env.sender
+    env.gl.message.origin_address=env.sender
     t.refund_task(1,0)
     assert env.transfers[-1][0]==env.sender
     assert t.get_task(1,0).status==env.c.REFUNDED

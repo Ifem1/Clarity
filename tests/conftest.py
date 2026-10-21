@@ -31,6 +31,9 @@ class Contract:
         instance.tasks = {}
         instance.manifests = {}
         instance.recipient_registry = {}
+        instance.funding_recovery = {}
+        instance.failed_transfer_recovery = {}
+        instance.bond_credits = {}
         return instance
 
 @pytest.fixture
